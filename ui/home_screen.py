@@ -32,16 +32,9 @@ class HomeScreen:
             button_height
         )
 
-        self.start_button = pygame.Rect(
-            center_x,
-            460,
-            button_width,
-            70
-        )
-
         self.compare_button = pygame.Rect(
             center_x,
-            560,
+            470,
             button_width,
             70
         )
@@ -58,13 +51,6 @@ class HomeScreen:
 
         self.screen.blit(title, (360, 100))
 
-        subtitle = self.font.render(
-            "Choose AI Algorithm",
-            True,
-            TEXT_COLOR
-        )
-
-        self.screen.blit(subtitle, (370, 190))
 
         self.draw_ai_button(
             self.minimax_button,
@@ -77,25 +63,6 @@ class HomeScreen:
             "Alpha-Beta Pruning",
             self.selected_ai == ALPHABETA
         )
-
-        pygame.draw.rect(
-            self.screen,
-            (50, 140, 70),
-            self.start_button,
-            border_radius=12
-        )
-
-        start_text = self.font.render(
-            "Start Game",
-            True,
-            TEXT_COLOR
-        )
-
-        start_rect = start_text.get_rect(
-            center=self.start_button.center
-        )
-
-        self.screen.blit(start_text, start_rect)
 
         pygame.draw.rect(
             self.screen,
@@ -147,15 +114,19 @@ class HomeScreen:
             mouse_pos = event.pos
 
             if self.minimax_button.collidepoint(mouse_pos):
+
                 self.selected_ai = MINIMAX
 
+                return GAME_SCREEN
+
             elif self.alphabeta_button.collidepoint(mouse_pos):
+
                 self.selected_ai = ALPHABETA
 
-            elif self.start_button.collidepoint(mouse_pos):
                 return GAME_SCREEN
 
             elif self.compare_button.collidepoint(mouse_pos):
+
                 return COMPARE_SCREEN
 
         return HOME_SCREEN

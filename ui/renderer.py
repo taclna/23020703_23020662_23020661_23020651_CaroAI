@@ -40,12 +40,23 @@ class Renderer:
 
     def draw_sidebar(self):
 
-        sidebar_x = 700
+        board_width = BOARD_SIZE * CELL_SIZE
+
+        sidebar_x = BOARD_OFFSET_X + board_width + 30
+
+        sidebar_width = (
+                WINDOW_WIDTH - sidebar_x
+        )
 
         pygame.draw.rect(
             self.screen,
             SIDEBAR_COLOR,
-            (sidebar_x, 0, 300, WINDOW_HEIGHT)
+            (
+                sidebar_x,
+                0,
+                sidebar_width,
+                WINDOW_HEIGHT
+            )
         )
 
     def draw_button(self, rect, text, font, mouse_pos):

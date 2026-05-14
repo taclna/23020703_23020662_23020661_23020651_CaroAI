@@ -17,13 +17,11 @@ pygame.display.set_caption("Caro AI")
 
 clock = pygame.time.Clock()
 
-font = pygame.font.SysFont("arial", 28)
+FONT_PATH = "assets/font/Merchant Copy.ttf"
 
-big_font = pygame.font.SysFont(
-    "arial",
-    54,
-    bold=True
-)
+font = pygame.font.Font(FONT_PATH, 26)
+
+big_font = pygame.font.Font(FONT_PATH, 48)
 
 # =========================
 # Screens

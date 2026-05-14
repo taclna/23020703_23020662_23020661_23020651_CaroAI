@@ -34,20 +34,29 @@ class GameScreen:
 
         self.game_over = False
         self.winner = None
+        self.ai_thinking = False
 
 
         self.nodes_searched = 0
         self.ai_score = 0
         self.ai_time = 0
 
+        board_width = BOARD_SIZE * CELL_SIZE
+
+        self.sidebar_x = (
+                BOARD_OFFSET_X
+                + board_width
+                + 40
+        )
+
         # Buttons
-        self.home_button = pygame.Rect(740, 520, 200, 50)
+        self.home_button = pygame.Rect(self.sidebar_x, 520, 200, 50)
 
-        self.undo_button = pygame.Rect(740, 180, 200, 50)
+        self.undo_button = pygame.Rect(self.sidebar_x, 180, 200, 50)
 
-        self.redo_button = pygame.Rect(740, 260, 200, 50)
+        self.redo_button = pygame.Rect(self.sidebar_x, 260, 200, 50)
 
-        self.reset_button = pygame.Rect(740, 340, 200, 50)
+        self.reset_button = pygame.Rect(self.sidebar_x, 340, 200, 50)
 
     def reset_game(self):
 
@@ -62,6 +71,7 @@ class GameScreen:
 
         self.game_over = False
         self.winner = None
+        self.ai_thinking = False
 
         self.nodes_searched = 0
         self.ai_score = 0
@@ -95,7 +105,7 @@ class GameScreen:
             TEXT_COLOR
         )
 
-        self.screen.blit(ai_text, (740, 110))
+        self.screen.blit(ai_text, (self.sidebar_x, 110))
 
         # Turn
         turn_text = self.font.render(
@@ -104,7 +114,7 @@ class GameScreen:
             TEXT_COLOR
         )
 
-        self.screen.blit(turn_text, (740, 140))
+        self.screen.blit(turn_text, (self.sidebar_x, 140))
 
         # Statistics
         nodes_text = self.font.render(
@@ -113,7 +123,7 @@ class GameScreen:
             TEXT_COLOR
         )
 
-        self.screen.blit(nodes_text, (740, 400))
+        self.screen.blit(nodes_text, (self.sidebar_x, 400))
 
         score_text = self.font.render(
             f"Score: {self.ai_score}",
@@ -121,7 +131,7 @@ class GameScreen:
             TEXT_COLOR
         )
 
-        self.screen.blit(score_text, (740, 440))
+        self.screen.blit(score_text, (self.sidebar_x, 440))
 
         time_text = self.font.render(
             f"Time: {self.ai_time}s",
@@ -129,7 +139,7 @@ class GameScreen:
             TEXT_COLOR
         )
 
-        self.screen.blit(time_text, (740, 480))
+        self.screen.blit(time_text, (self.sidebar_x, 480))
 
         # Buttons
         self.renderer.draw_button(
@@ -160,8 +170,64 @@ class GameScreen:
             mouse_pos
         )
 
+        if self.ai_thinking:
+            # Dark overlay on board
+            overlay = pygame.Surface(
+                (
+                    BOARD_SIZE * CELL_SIZE,
+                    BOARD_SIZE * CELL_SIZE
+                )
+            )
+
+            overlay.set_alpha(140)
+
+            overlay.fill((0, 0, 0))
+
+            self.screen.blit(
+                overlay,
+                (BOARD_OFFSET_X, BOARD_OFFSET_Y)
+            )
+
+            # Popup
+            popup_rect = pygame.Rect(
+                250,
+                250,
+                350,
+                150
+            )
+
+            pygame.draw.rect(
+                self.screen,
+                (50, 50, 50),
+                popup_rect,
+                border_radius=16
+            )
+
+            pygame.draw.rect(
+                self.screen,
+                (120, 120, 120),
+                popup_rect,
+                width=2,
+                border_radius=16
+            )
+
+            # Text
+            thinking_text = self.font.render(
+                "AI THINKING...",
+                True,
+                (255, 220, 120)
+            )
+
+            text_rect = thinking_text.get_rect(
+                center=(425, 325)
+            )
+
+            self.screen.blit(
+                thinking_text,
+                text_rect
+            )
+
         # Game over
-        # Game over popup
         if self.game_over:
 
             # Dark overlay only on board
@@ -243,12 +309,17 @@ class GameScreen:
                 return HOME_SCREEN
 
             # Undo
+            # Undo
             if self.undo_button.collidepoint((mouse_x, mouse_y)):
 
+                # Undo AI move
+                self.history.undo(self.board)
+
+                # Undo player move
                 player = self.history.undo(self.board)
 
                 if player:
-                    self.current_player = player
+                    self.current_player = PLAYER_X
 
                     self.game_over = False
                     self.winner = None
@@ -256,14 +327,14 @@ class GameScreen:
             # Redo
             elif self.redo_button.collidepoint((mouse_x, mouse_y)):
 
+                # Redo player move
+                self.history.redo(self.board)
+
+                # Redo AI move
                 player = self.history.redo(self.board)
 
                 if player:
-                    self.current_player = (
-                        PLAYER_O
-                        if player == PLAYER_X
-                        else PLAYER_X
-                    )
+                    self.current_player = PLAYER_X
 
             # Reset
             elif self.reset_button.collidepoint((mouse_x, mouse_y)):
@@ -321,7 +392,18 @@ class GameScreen:
 
         import time
 
+        # Show thinking overlay
+        self.ai_thinking = True
+
+        self.draw()
+
+        pygame.display.flip()
+
         start_time = time.time()
+
+        # =========================
+        # AI SEARCH
+        # =========================
 
         if self.ai_mode == MINIMAX:
 
@@ -352,11 +434,10 @@ class GameScreen:
             4
         )
 
-        # self.nodes_searched = (
-        #     MinimaxAI.nodes_searched
-        # )
-
         self.ai_score = score
+
+        # Hide thinking overlay
+        self.ai_thinking = False
 
         if move is None:
             return
@@ -371,7 +452,10 @@ class GameScreen:
             PLAYER_O
         )
 
-        # Check AI win
+        # =========================
+        # CHECK GAME STATE
+        # =========================
+
         if GameLogic.check_win(
                 self.board,
                 PLAYER_O
@@ -380,7 +464,9 @@ class GameScreen:
             self.game_over = True
             self.winner = PLAYER_O
 
-        elif GameLogic.check_draw(self.board):
+        elif GameLogic.check_draw(
+                self.board
+        ):
 
             self.game_over = True
             self.winner = None
