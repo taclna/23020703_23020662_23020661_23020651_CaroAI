@@ -17,10 +17,30 @@ class MinimaxAI:
 
         MinimaxAI.nodes_searched = 0
 
+        moves = MoveGenerator.get_candidate_moves(board)
+
+        # --- Threat detection: kiểm tra trước khi search đầy đủ ---
+
+        # 1. Nếu AI có thể thắng ngay → đánh luôn
+        for row, col in moves:
+            board[row][col] = PLAYER_O
+            win = GameLogic.check_win(board, PLAYER_O)
+            board[row][col] = EMPTY
+            if win:
+                return (row, col), 1000000
+
+        # 2. Nếu người chơi sắp thắng → buộc phải chặn
+        for row, col in moves:
+            board[row][col] = PLAYER_X
+            win = GameLogic.check_win(board, PLAYER_X)
+            board[row][col] = EMPTY
+            if win:
+                return (row, col), 0
+
+        # --- Minimax search đầy đủ ---
+
         best_score = -math.inf
         best_move = None
-
-        moves = MoveGenerator.get_candidate_moves(board)
 
         for row, col in moves:
 
@@ -35,7 +55,6 @@ class MinimaxAI:
             board[row][col] = EMPTY
 
             if score > best_score:
-
                 best_score = score
                 best_move = (row, col)
 
@@ -59,9 +78,9 @@ class MinimaxAI:
         if depth == 0:
             return Evaluator.evaluate(board)
 
-        moves = MoveGenerator.get_candidate_moves(board)
+        moves = MoveGenerator.get_candidate_moves(board, sort=True)
 
-        # MAX
+        # MAX (AI)
         if maximizing:
 
             best = -math.inf
@@ -82,7 +101,7 @@ class MinimaxAI:
 
             return best
 
-        # MIN
+        # MIN (người chơi)
         else:
 
             best = math.inf

@@ -7,6 +7,7 @@ from core.history import MoveHistory
 from ai.random_ai import RandomAI
 from ai.minimax import MinimaxAI
 from ai.alphabeta import AlphaBetaAI
+from ui.compare_screen import CompareScreen
 
 from ui.renderer import Renderer
 
@@ -33,6 +34,7 @@ class GameScreen:
 
         self.game_over = False
         self.winner = None
+
 
         self.nodes_searched = 0
         self.ai_score = 0

@@ -13,10 +13,38 @@ class HomeScreen:
 
         self.selected_ai = MINIMAX
 
-        self.minimax_button = pygame.Rect(350, 250, 300, 60)
-        self.alphabeta_button = pygame.Rect(350, 340, 300, 60)
+        button_width = 300
+        button_height = 60
 
-        self.start_button = pygame.Rect(350, 460, 300, 70)
+        center_x = WINDOW_WIDTH // 2 - button_width // 2
+
+        self.minimax_button = pygame.Rect(
+            center_x,
+            250,
+            button_width,
+            button_height
+        )
+
+        self.alphabeta_button = pygame.Rect(
+            center_x,
+            340,
+            button_width,
+            button_height
+        )
+
+        self.start_button = pygame.Rect(
+            center_x,
+            460,
+            button_width,
+            70
+        )
+
+        self.compare_button = pygame.Rect(
+            center_x,
+            560,
+            button_width,
+            70
+        )
 
     def draw(self):
 
@@ -69,6 +97,25 @@ class HomeScreen:
 
         self.screen.blit(start_text, start_rect)
 
+        pygame.draw.rect(
+            self.screen,
+            (180, 120, 40),
+            self.compare_button,
+            border_radius=12
+        )
+
+        compare_text = self.font.render(
+            "Compare Both AI",
+            True,
+            TEXT_COLOR
+        )
+
+        compare_rect = compare_text.get_rect(
+            center=self.compare_button.center
+        )
+
+        self.screen.blit(compare_text, compare_rect)
+
     def draw_ai_button(self, rect, text, selected):
 
         color = (90, 90, 90)
@@ -107,5 +154,8 @@ class HomeScreen:
 
             elif self.start_button.collidepoint(mouse_pos):
                 return GAME_SCREEN
+
+            elif self.compare_button.collidepoint(mouse_pos):
+                return COMPARE_SCREEN
 
         return HOME_SCREEN
