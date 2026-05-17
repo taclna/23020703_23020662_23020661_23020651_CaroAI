@@ -55,6 +55,13 @@ class CompareScreen:
         self._screenshot_msg = ""
         self._screenshot_msg_timer = 0
 
+        # Nút điều chỉnh depth (dùng chung 2 AI)
+        _DBY = self._BTN_Y + self._BTN_H + 18   # y của thanh depth
+        _BW  = 32
+        self._depth_minus_btn = pygame.Rect(self._MID_X - 70, _DBY, _BW, _BW)
+        self._depth_plus_btn  = pygame.Rect(self._MID_X + 38, _DBY, _BW, _BW)
+        self._depth_label_x   = self._MID_X
+
     # ──────────────────────────────────────────────────────────────────────
 
     def _init_state(self):
@@ -70,6 +77,8 @@ class CompareScreen:
 
         # Toggle AI
         self.ai_enabled = True
+
+        self.depth = 3
 
         self.minimax_nodes   = 0; self.minimax_time   = 0; self.minimax_score   = 0
         self.alphabeta_nodes = 0; self.alphabeta_time = 0; self.alphabeta_score = 0
@@ -137,6 +146,7 @@ class CompareScreen:
             self._draw_order_dialog(mouse)
 
         self._draw_screenshot_msg()
+        self._draw_depth_control(mouse)
 
     def _draw_screenshot_msg(self):
         """Hiển thị thông báo đã lưu ảnh trong 2 giây."""
@@ -150,6 +160,24 @@ class CompareScreen:
         msg_y = self._BTN_Y + self._BTN_H + 10
         s = self.font.render(self._screenshot_msg, True, (100, 220, 130))
         self.screen.blit(s, s.get_rect(center=(self._MID_X, msg_y)))
+
+    def _draw_depth_control(self, mouse):
+        """Vẽ thanh chỉnh depth dùng chung cho cả 2 AI."""
+        # Nút −
+        color_m = BUTTON_HOVER if self._depth_minus_btn.collidepoint(mouse) else BUTTON_COLOR
+        pygame.draw.rect(self.screen, color_m, self._depth_minus_btn, border_radius=8)
+        s = self.font.render("-", True, TEXT_COLOR)
+        self.screen.blit(s, s.get_rect(center=self._depth_minus_btn.center))
+
+        # Nút +
+        color_p = BUTTON_HOVER if self._depth_plus_btn.collidepoint(mouse) else BUTTON_COLOR
+        pygame.draw.rect(self.screen, color_p, self._depth_plus_btn, border_radius=8)
+        s = self.font.render("+", True, TEXT_COLOR)
+        self.screen.blit(s, s.get_rect(center=self._depth_plus_btn.center))
+
+        # Label "Depth: N"
+        label = self.font.render(f"Depth: {self.depth}", True, TEXT_COLOR)
+        self.screen.blit(label, label.get_rect(center=(self._depth_label_x, self._depth_minus_btn.centery)))
 
     # ── Header ───────────────────────────────────────────────────────────
 
@@ -360,6 +388,14 @@ class CompareScreen:
                 self._set_order(go_first=False)
             return COMPARE_SCREEN
 
+        # ── Depth control ─────────────────────────────────────────────────
+        if self._depth_minus_btn.collidepoint((mx, my)):
+            self.depth = max(1, self.depth - 1)
+            return COMPARE_SCREEN
+        if self._depth_plus_btn.collidepoint((mx, my)):
+            self.depth = min(6, self.depth + 1)
+            return COMPARE_SCREEN
+
         # ── Screenshot ────────────────────────────────────────────────────
         if self.screenshot_button.collidepoint((mx, my)):
             self._take_screenshot()
@@ -479,7 +515,7 @@ class CompareScreen:
 
         def run_minimax():
             start = time.time()
-            move, score = MinimaxAI.get_best_move(mm_copy, depth=3)
+            move, score = MinimaxAI.get_best_move(mm_copy, depth=self.depth)
             elapsed = round(time.time() - start, 4)
             self.minimax_nodes = MinimaxAI.nodes_searched
             self.minimax_score = score
@@ -496,7 +532,7 @@ class CompareScreen:
 
         def run_alphabeta():
             start = time.time()
-            move, score = AlphaBetaAI.get_best_move(ab_copy, depth=3)
+            move, score = AlphaBetaAI.get_best_move(ab_copy, depth=self.depth)
             elapsed = round(time.time() - start, 4)
             self.alphabeta_nodes = AlphaBetaAI.nodes_searched
             self.alphabeta_score = score
