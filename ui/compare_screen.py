@@ -1,6 +1,8 @@
 import pygame
 import time
 import threading
+import os
+from datetime import datetime
 
 from copy import deepcopy
 
@@ -16,21 +18,21 @@ class CompareScreen:
     #  LAYOUT CONSTANTS
     # ──────────────────────────────────────────────────────────────────────
 
-    _CELL     = 36
-    _BOARD_PX = BOARD_SIZE * _CELL           # 324
-    _GAP      = 30
-    _BOARD_Y  = 108
-    _TOTAL_W  = _BOARD_PX * 2 + _GAP        # 678
-    _LEFT_X   = (WINDOW_WIDTH - _TOTAL_W) // 2   # 36
-    _RIGHT_X  = _LEFT_X + _BOARD_PX + _GAP       # 390
+    _CELL     = 42
+    _BOARD_PX = BOARD_SIZE * _CELL           # 378
+    _GAP      = 20
+    _BOARD_Y  = 120
+    _TOTAL_W  = _BOARD_PX * 2 + _GAP        # 776
+    _LEFT_X   = (WINDOW_WIDTH - _TOTAL_W) // 2
+    _RIGHT_X  = _LEFT_X + _BOARD_PX + _GAP
     _MID_X    = WINDOW_WIDTH // 2
 
-    _STATS_Y  = _BOARD_Y + _BOARD_PX + 16   # 448
-    # 5 nút: Undo | Redo | Reset | Toggle AI | Home
-    _BTN_Y    = _STATS_Y + 3 * 30 + 8       # 546
-    _BTN_H    = 44
-    _BTN_W    = (_TOTAL_W - 6 * 8) // 5     # ~123
-    _BTN_GAP  = (_TOTAL_W - 5 * _BTN_W) // 6
+    _STATS_Y  = _BOARD_Y + _BOARD_PX + 10
+    # 6 nút: Undo | Redo | Reset | Toggle AI | Screenshot | Home
+    _BTN_Y    = _STATS_Y + 3 * 26 + 6
+    _BTN_H    = 40
+    _BTN_W    = (_TOTAL_W - 7 * 6) // 6
+    _BTN_GAP  = (_TOTAL_W - 6 * _BTN_W) // 7
 
     # ──────────────────────────────────────────────────────────────────────
     #  INIT
@@ -44,10 +46,14 @@ class CompareScreen:
 
         # ── 5 nút căn đều ───────────────────────────────────────────────
         lx = self._LEFT_X
-        for i, name in enumerate(["undo", "redo", "reset", "toggle_ai", "home"]):
+        for i, name in enumerate(["undo", "redo", "reset", "toggle_ai", "screenshot", "home"]):
             x = lx + self._BTN_GAP + i * (self._BTN_W + self._BTN_GAP)
             setattr(self, f"{name}_button",
                     pygame.Rect(x, self._BTN_Y, self._BTN_W, self._BTN_H))
+
+        # Thông báo screenshot
+        self._screenshot_msg = ""
+        self._screenshot_msg_timer = 0
 
     # ──────────────────────────────────────────────────────────────────────
 
@@ -130,6 +136,21 @@ class CompareScreen:
         if self.order_pending and not self.game_over:
             self._draw_order_dialog(mouse)
 
+        self._draw_screenshot_msg()
+
+    def _draw_screenshot_msg(self):
+        """Hiển thị thông báo đã lưu ảnh trong 2 giây."""
+        if not self._screenshot_msg:
+            return
+        elapsed = pygame.time.get_ticks() - self._screenshot_msg_timer
+        if elapsed > 2000:
+            self._screenshot_msg = ""
+            return
+        # Nền mờ phía dưới nút
+        msg_y = self._BTN_Y + self._BTN_H + 10
+        s = self.font.render(self._screenshot_msg, True, (100, 220, 130))
+        self.screen.blit(s, s.get_rect(center=(self._MID_X, msg_y)))
+
     # ── Header ───────────────────────────────────────────────────────────
 
     def _draw_header(self):
@@ -138,14 +159,11 @@ class CompareScreen:
 
         for cx, label in [(cx_l, "Minimax"), (cx_r, "Alpha-Beta")]:
             s = self.font.render(label, True, TEXT_COLOR)
-            self.screen.blit(s, s.get_rect(center=(cx, 38)))
+            self.screen.blit(s, s.get_rect(center=(cx, 50)))
 
         pygame.draw.line(self.screen, GRID_COLOR,
-                         (self._LEFT_X, 58),
-                         (self._RIGHT_X + self._BOARD_PX, 58), 1)
-
-        title = self.font.render("COMPARE", True, TEXT_DIM)
-        self.screen.blit(title, title.get_rect(center=(self._MID_X, 78)))
+                         (self._LEFT_X, 68),
+                         (self._RIGHT_X + self._BOARD_PX, 68), 1)
 
     # ── Turn bar ──────────────────────────────────────────────────────────
 
@@ -161,7 +179,7 @@ class CompareScreen:
         else:
             label = f"Turn: AI  ({self.current_player})"
         s = self.font.render(label, True, TEXT_DIM)
-        self.screen.blit(s, s.get_rect(center=(self._MID_X, 93)))
+        self.screen.blit(s, s.get_rect(center=(self._MID_X, 82)))
 
     # ── Board ─────────────────────────────────────────────────────────────
 
@@ -247,7 +265,7 @@ class CompareScreen:
                 ("Score", str(score)),
                 ("Time",  f"{t} s"),
             ]):
-                y = self._STATS_Y + i * 30 + 12
+                y = self._STATS_Y + i * 26 + 10
                 ks = self.font.render(f"{k}:", True, TEXT_DIM)
                 vs = self.font.render(v,       True, TEXT_COLOR)
                 self.screen.blit(ks, ks.get_rect(midright=(cx - 4, y)))
@@ -258,10 +276,10 @@ class CompareScreen:
     def _draw_buttons(self, mouse):
         # Undo / Redo / Reset / Home — nút thường
         for rect, label in [
-            (self.undo_button,  "Undo"),
-            (self.redo_button,  "Redo"),
-            (self.reset_button, "Reset"),
-            (self.home_button,  "Home"),
+            (self.undo_button,   "Undo"),
+            (self.redo_button,   "Redo"),
+            (self.reset_button,  "Reset"),
+            (self.home_button,   "Home"),
         ]:
             color = BUTTON_HOVER if rect.collidepoint(mouse) else BUTTON_COLOR
             pygame.draw.rect(self.screen, color, rect, border_radius=10)
@@ -274,6 +292,13 @@ class CompareScreen:
         pygame.draw.rect(self.screen, ai_color, self.toggle_ai_button, border_radius=10)
         s = self.font.render(ai_label, True, TEXT_COLOR)
         self.screen.blit(s, s.get_rect(center=self.toggle_ai_button.center))
+
+        # Screenshot — màu đặc biệt (xanh lá)
+        ss_hover = self.screenshot_button.collidepoint(mouse)
+        ss_color = (60, 160, 80) if ss_hover else (40, 120, 60)
+        pygame.draw.rect(self.screen, ss_color, self.screenshot_button, border_radius=10)
+        s = self.font.render("Shot", True, TEXT_COLOR)
+        self.screen.blit(s, s.get_rect(center=self.screenshot_button.center))
 
     # ── Order dialog ──────────────────────────────────────────────────────
 
@@ -333,6 +358,11 @@ class CompareScreen:
                 self._set_order(go_first=True)
             elif hasattr(self, "_go_second_btn") and self._go_second_btn.collidepoint((mx, my)):
                 self._set_order(go_first=False)
+            return COMPARE_SCREEN
+
+        # ── Screenshot ────────────────────────────────────────────────────
+        if self.screenshot_button.collidepoint((mx, my)):
+            self._take_screenshot()
             return COMPARE_SCREEN
 
         # ── Home ──────────────────────────────────────────────────────────
@@ -491,6 +521,16 @@ class CompareScreen:
                 self.game_over = True
             else:
                 self.current_player = self.player_piece
+
+    def _take_screenshot(self):
+        """Lưu ảnh màn hình vào thư mục screenshots/."""
+        folder = "screenshots"
+        os.makedirs(folder, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = os.path.join(folder, f"compare_{timestamp}.png")
+        pygame.image.save(self.screen, filename)
+        self._screenshot_msg = f"Saved: {filename}"
+        self._screenshot_msg_timer = pygame.time.get_ticks()
 
     # ──────────────────────────────────────────────────────────────────────
     #  UNDO / REDO
