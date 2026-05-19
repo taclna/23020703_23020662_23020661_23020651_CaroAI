@@ -10,8 +10,8 @@ Trò chơi XO (Caro 9x9) tích hợp AI với các thuật toán **Minimax** và
 Clone project:
 
 ```bash
-git clone https://github.com/taclna/XOGame.git
-cd XOGame
+git clone https://github.com/taclna/23020703_23020662_23020661_23020651_CaroAI
+cd 23020703_23020662_23020661_23020651_CaroAI
 ```
 
 Cài thư viện cần thiết:
